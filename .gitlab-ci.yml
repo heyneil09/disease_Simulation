@@ -1,0 +1,10 @@
+include:
+  - project: ai/student-projects/tooling/cicd-helpers
+    ref: main
+    file:
+      - cschober/hpc-programming-lab/part_1_disease.yaml
+      - cschober/hpc-programming-lab/part_2_gol.yaml
+
+stages:
+  - part1
+  - part2
