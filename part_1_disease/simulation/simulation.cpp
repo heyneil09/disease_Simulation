@@ -34,7 +34,6 @@ void Person::vaccinate() {
     if (state_ == State::SUSCEPTIBLE) {
        state_ = State::VACCINATED;
     }
-    state_ = State::VACCINATED;//Vaccination only works before infectio nhappend
 }
 
 bool Person::one_more_day() {
@@ -92,13 +91,21 @@ void Population::reset(const Disease& disease, mt19937& rng) {
     for (int i = 0; i < num_vax; i++) {
         people_[indices[i]].vaccinate();
     }
-    //reset counters
-    susceptible_count_ = infectious_count_ = recovered_count_ = vaccinated_count_ = 0;
+    
+    // Initialize all counts to 0
+    susceptible_count_ = 0;
+    infectious_count_ = 0;
+    recovered_count_ = 0;
+    vaccinated_count_ = 0;
+
+    // Recalculate counts after vaccination
     for (const auto& p : people_) {
         if (p.isSusceptible()) {
             susceptible_count_++;
         } else if (p.isInfectious()) {
             infectious_count_++;
+        } else if (p.isVaccinated()) {
+            vaccinated_count_++;
         }
       }
     
@@ -207,12 +214,13 @@ double Simulation::compute_std(const std::vector<int>& values, double mean) {
     return sqrt(sum_sq_diff / (values.size() - 1));
 } 
 
+
 void Simulation::write_stats_csv(const string& path,
                                   const AggregatedStats& stats) const {
     ofstream f(path);
     f << "key,mean,std\n"
       << "total_steps,"         << stats.mean_steps      << "," << stats.std_steps       << "\n"
-      << "susceptiple_persons," << stats.mean_susceptible << "," << stats.std_susceptible << "\n"
+      << "susceptible_persons," << stats.mean_susceptible << "," << stats.std_susceptible << "\n"
       << "recovered_persons,"   << stats.mean_recovered   << "," << stats.std_recovered   << "\n"
       << "vaccinated_persons,"  << stats.mean_vaccinated  << "," << stats.std_vaccinated  << "\n";
 }
@@ -248,7 +256,7 @@ void Simulation::start() {
     }
 
     ofstream details_file("disease_details.csv");
-    details_file << "name,run,infectious,recovered,susceptiple,vaccinated\n";
+    details_file << "name,run,infectious,recovered,susceptible,vaccinated\n";
 
     mt19937 rng(random_device{}());
     vector<int> all_steps, all_susc, all_rec, all_vax;
