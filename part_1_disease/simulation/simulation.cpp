@@ -207,3 +207,78 @@ double Simulation::compute_std(const std::vector<int>& values, double mean) {
     return sqrt(sum_sq_diff / (values.size() - 1));
 } 
 
+void Simulation::write_stats_csv(const string& path,
+                                  const AggregatedStats& stats) const {
+    ofstream f(path);
+    f << "key,mean,std\n"
+      << "total_steps,"         << stats.mean_steps      << "," << stats.std_steps       << "\n"
+      << "susceptiple_persons," << stats.mean_susceptible << "," << stats.std_susceptible << "\n"
+      << "recovered_persons,"   << stats.mean_recovered   << "," << stats.std_recovered   << "\n"
+      << "vaccinated_persons,"  << stats.mean_vaccinated  << "," << stats.std_vaccinated  << "\n";
+}
+
+void Simulation::start() {
+    cout << "Starting simulation..." << endl;
+
+    INIReader reader(input_file);
+    if (reader.ParseError() < 0) {
+        cerr << "Error reading config file" << endl;
+        return;
+    }
+
+    string sim_name = reader.Get      ("global", "simulation_name", "unknown");
+    long num_pops   = reader.GetInteger("global", "num_populations", 0);
+    long sim_runs   = reader.GetInteger("global", "simulation_runs",  1);
+
+    Disease disease(
+        reader.Get      ("disease", "name",             "Unknown"),
+        reader.GetInteger("disease", "duration",          8),
+        reader.GetReal   ("disease", "transmissibility",  0.15)
+    );
+
+    vector<Population> populations;
+    for (long i = 1; i <= num_pops; i++) {
+        string sec = "population_" + to_string(i);
+        populations.emplace_back(
+            reader.Get      (sec, "name",             "Pop" + to_string(i)),
+            (int)reader.GetInteger(sec, "size",        1000),
+            reader.GetReal   (sec, "vaccination_rate", 0.0),
+            reader.GetBoolean(sec, "patient_0",        false)
+        );
+    }
+
+    ofstream details_file("disease_details.csv");
+    details_file << "name,run,infectious,recovered,susceptiple,vaccinated\n";
+
+    mt19937 rng(random_device{}());
+    vector<int> all_steps, all_susc, all_rec, all_vax;
+
+    for (long run = 0; run < sim_runs; run++) {
+        int run_steps = 0, run_susc = 0, run_rec = 0, run_vax = 0;
+        for (auto& pop : populations) {
+            PopulationStats s = pop.run_simulation(disease, (int)run, rng, details_file);
+            run_steps  = max(run_steps, s.total_steps);
+            run_susc  += s.susceptible;
+            run_rec   += s.recovered;
+            run_vax   += s.vaccinated;
+        }
+        all_steps.push_back(run_steps);
+        all_susc .push_back(run_susc);
+        all_rec  .push_back(run_rec);
+        all_vax  .push_back(run_vax);
+        cout << "Run " << run << "  steps=" << run_steps << "  recovered=" << run_rec << endl;
+    }
+
+    AggregatedStats agg;
+    agg.mean_steps       = compute_mean(all_steps);
+    agg.std_steps        = compute_std (all_steps, agg.mean_steps);
+    agg.mean_susceptible = compute_mean(all_susc);
+    agg.std_susceptible  = compute_std (all_susc,  agg.mean_susceptible);
+    agg.mean_recovered   = compute_mean(all_rec);
+    agg.std_recovered    = compute_std (all_rec,   agg.mean_recovered);
+    agg.mean_vaccinated  = compute_mean(all_vax);
+    agg.std_vaccinated   = compute_std (all_vax,   agg.mean_vaccinated);
+
+    write_stats_csv("disease_stats.csv", agg);
+    cout << "Done! Output written to disease_stats.csv and disease_details.csv" << endl;
+}
