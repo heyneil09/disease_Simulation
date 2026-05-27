@@ -239,7 +239,7 @@ void Simulation::start() {
     }
     ofstream details_file("disease_details.csv");
     details_file << "name,run,infectious,recovered,susceptiple,vaccinated\n";
-    details_file << "name,run,infectious,recovered,susceptible,vaccinated\n";
+  
     mt19937 rng(random_device{}());
     vector<int> all_steps, all_susc, all_rec, all_vax;
     for (long run = 0; run < sim_runs; run++) {
