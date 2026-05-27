@@ -1,4 +1,3 @@
-
 #ifndef HPC_DISEASE_SIMULATION_H_
 #define HPC_DISEASE_SIMULATION_H_
 
@@ -144,6 +143,14 @@ public:
         return static_cast<int>(people_.size());
     }
 
+    // Reset population before each run
+    void reset(const Disease& disease,
+               std::mt19937& rng);
+
+    // Simulate one full day
+    void simulate_one_day(const Disease& disease,
+                          std::mt19937& rng);
+
 private:
     std::string name_;
 
@@ -165,13 +172,7 @@ private:
     // Reused buffer for infected people
     std::vector<int> infectious_indices_;
 
-    // Reset population before each run
-    void reset(const Disease& disease,
-               std::mt19937& rng);
-
-    // Simulate one full day
-    void simulate_one_day(const Disease& disease,
-                          std::mt19937& rng);
+    
 };
 
 // Stores aggregated statistics across runs
@@ -203,14 +204,16 @@ public:
     // Start all simulation runs
     void start();
 
-private:
-    // Configuration file path
-    std::string input_file;
-
     // Save aggregated statistics into CSV
     void write_stats_csv(
         const std::string& path,
         const AggregatedStats& stats) const;
+
+private:
+    // Configuration file path
+    std::string input_file;
+
+    
 
     // Calculate average value
     static double compute_mean(
