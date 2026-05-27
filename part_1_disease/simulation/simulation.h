@@ -142,7 +142,6 @@ public:
     int getSize() const {
         return static_cast<int>(people_.size());
     }
-
     // Reset population before each run
     void reset(const Disease& disease,
                std::mt19937& rng);
@@ -203,7 +202,6 @@ public:
 
     // Start all simulation runs
     void start();
-
     // Save aggregated statistics into CSV
     void write_stats_csv(
         const std::string& path,
@@ -212,9 +210,6 @@ public:
 private:
     // Configuration file path
     std::string input_file;
-
-    
-
     // Calculate average value
     static double compute_mean(
         const std::vector<int>& values);
